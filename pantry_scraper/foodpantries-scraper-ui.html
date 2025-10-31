@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Pantry Scraper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .control-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            grid-column: 1 / -1;
+        }
+
+        button {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.active {
+            display: block;
+        }
+
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+
+        .progress-container {
+            display: none;
+        }
+
+        .progress-container.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .progress-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .results-container.active {
+            display: block;
+        }
+
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .pantry-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .pantry-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .pantry-item:last-child {
+            border-bottom: none;
+        }
+
+        .pantry-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .pantry-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .download-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍞 Food Pantry Scraper</h1>
+            <p>Collect food bank and pantry data from multiple sources</p>
+        </div>
+
+        <div class="card">
+            <div class="control-panel">
+                <div class="form-group">
+                    <label for="state-select">Select State:</label>
+                    <select id="state-select">
+                        <option value="">Loading states...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="limit-input">Limit (optional):</label>
+                    <input type="number" id="limit-input" placeholder="Leave empty for all pantries" min="1">
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="geocode-checkbox" checked style="width: auto; margin-right: 10px;">
+                        <span>Add coordinates with Nominatim geocoding (FREE - recommended)</span>
+                    </label>
+                    <small style="color: #666; margin-left: 30px;">Adds lat/long for mapping. No API key needed!</small>
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="multi-source-checkbox" style="width: auto; margin-right: 10px;">
+                        <span>🔥 Scrape from multiple sources (FoodPantries.org + Feeding America + more data)</span>
+                    </label>
+                    <small style="color: #666; margin-left: 30px;">Takes longer but gets more complete data. Automatically deduplicates.</small>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-primary" id="scrape-btn" disabled>Start Scraping</button>
+                    <button class="btn-secondary" id="stop-btn" disabled>Stop</button>
+                </div>
+            </div>
+
+            <div id="status" class="status"></div>
+
+            <div id="progress" class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill">0%</div>
+                </div>
+                <div class="progress-text" id="progress-text">Initializing...</div>
+            </div>
+        </div>
+
+        <div class="card results-container" id="results-container">
+            <h2 style="margin-bottom: 20px;">Results</h2>
+            
+            <div class="results-summary">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-scraped">0</div>
+                    <div class="stat-label">Total Scraped</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="with-hours">0</div>
+                    <div class="stat-label">With Hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="total-sources">1</div>
+                    <div class="stat-label">Data Sources</div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom: 15px;">Pantries Found:</h3>
+            <div class="pantry-list" id="pantry-list"></div>
+
+            <div class="download-section">
+                <button class="btn-primary" id="download-btn">📥 Download as JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        let scrapedData = [];
+        let statusInterval = null;
+
+        const stateSelect = document.getElementById('state-select');
+        const limitInput = document.getElementById('limit-input');
+        const geocodeCheckbox = document.getElementById('geocode-checkbox');
+        const multiSourceCheckbox = document.getElementById('multi-source-checkbox');
+        const scrapeBtn = document.getElementById('scrape-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusDiv = document.getElementById('status');
+        const progressContainer = document.getElementById('progress');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const resultsContainer = document.getElementById('results-container');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // Load states from API
+        async function loadStates() {
+            try {
+                showStatus('Loading states...', 'info');
+                const response = await fetch(`${API_BASE}/states`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    stateSelect.innerHTML = '<option value="">-- Select a state --</option>';
+                    Object.entries(data.states).sort().forEach(([state, info]) => {
+                        const option = document.createElement('option');
+                        option.value = state;
+                        option.textContent = `${state} (${info.count} pantries)`;
+                        stateSelect.appendChild(option);
+                    });
+                    scrapeBtn.disabled = false;
+                    statusDiv.classList.remove('active');
+                } else {
+                    showStatus('Error loading states: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Cannot connect to backend. Make sure Flask server is running on port 5000.', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status active ${type}`;
+        }
+
+        // Update progress
+        function updateProgress(current, total, message) {
+            if (total === 0) return;
+            const percent = Math.round((current / total) * 100);
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+            progressText.textContent = message;
+        }
+
+        // Poll for status updates
+        async function pollStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                const status = await response.json();
+                
+                updateProgress(status.current, status.total, status.status);
+                
+                if (!status.is_scraping && statusInterval) {
+                    clearInterval(statusInterval);
+                    statusInterval = null;
+                    scrapeBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    stateSelect.disabled = false;
+                    limitInput.disabled = false;
+                    geocodeCheckbox.disabled = false;
+                    multiSourceCheckbox.disabled = false;
+                    
+                    // Fetch final results
+                    await fetchResults();
+                    
+                    if (status.status.includes('Completed')) {
+                        showStatus(status.status, 'success');
+                    } else {
+                        showStatus(status.status, 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+            }
+        }
+
+        // Fetch results from backend
+        async function fetchResults() {
+            try {
+                const response = await fetch(`${API_BASE}/results`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    scrapedData = data.data;
+                    displayResults();
+                }
+            } catch (error) {
+                console.error('Error fetching results:', error);
+            }
+        }
+
+        // Display results
+        function displayResults() {
+            if (scrapedData.length === 0) return;
+            
+            resultsContainer.classList.add('active');
+            
+            document.getElementById('total-scraped').textContent = scrapedData.length;
+            document.getElementById('with-hours').textContent = scrapedData.filter(p => p.hours).length;
+            
+            // Count unique sources
+            const sources = new Set();
+            scrapedData.forEach(p => {
+                if (p.sources) {
+                    p.sources.forEach(s => sources.add(s));
+                } else if (p.source) {
+                    sources.add(p.source);
+                }
+            });
+            document.getElementById('total-sources').textContent = sources.size;
+            
+            const pantryList = document.getElementById('pantry-list');
+            pantryList.innerHTML = '';
+            
+            scrapedData.forEach(pantry => {
+                const item = document.createElement('div');
+                item.className = 'pantry-item';
+                
+                const addressParts = [];
+                if (pantry.address) addressParts.push(pantry.address);
+                if (pantry.city) addressParts.push(pantry.city);
+                if (pantry.state) addressParts.push(pantry.state);
+                if (pantry.zip) addressParts.push(pantry.zip);
+                
+                const coords = pantry.latitude && pantry.longitude ? 
+                    `<br>📍 Coordinates: ${pantry.latitude.toFixed(6)}, ${pantry.longitude.toFixed(6)}` : '';
+                
+                const sourceInfo = pantry.sources ? 
+                    `<br><small style="color: #999;">Sources: ${pantry.sources.join(', ')}</small>` : 
+                    (pantry.source ? `<br><small style="color: #999;">Source: ${pantry.source}</small>` : '');
+                
+                item.innerHTML = `
+                    <div class="pantry-name">${pantry.name || 'Unknown'}</div>
+                    <div class="pantry-details">
+                        ${addressParts.length ? addressParts.join(', ') + '<br>' : ''}
+                        ${pantry.phone ? 'Phone: ' + pantry.phone + '<br>' : ''}
+                        ${pantry.hours ? 'Hours: ' + pantry.hours + '<br>' : 'Hours: Not listed<br>'}
+                        ${pantry.website ? '<a href="' + pantry.website + '" target="_blank">Website</a><br>' : ''}
+                        ${pantry.google_maps_url ? '<a href="' + pantry.google_maps_url + '" target="_blank">View on Google Maps</a>' : ''}
+                        ${coords}
+                        ${sourceInfo}
+                    </div>
+                `;
+                pantryList.appendChild(item);
+            });
+        }
+
+        // Start scraping
+        scrapeBtn.addEventListener('click', async () => {
+            const state = stateSelect.value;
+            const limit = limitInput.value ? parseInt(limitInput.value) : null;
+            const geocode = geocodeCheckbox.checked;
+            const multiSource = multiSourceCheckbox.checked;
+            
+            if (!state) {
+                showStatus('Please select a state', 'error');
+                return;
+            }
+            
+            try {
+                scrapeBtn.disabled = true;
+                stopBtn.disabled = false;
+                stateSelect.disabled = true;
+                limitInput.disabled = true;
+                geocodeCheckbox.disabled = true;
+                multiSourceCheckbox.disabled = true;
+                progressContainer.classList.add('active');
+                resultsContainer.classList.remove('active');
+                
+                const mode = multiSource ? ' from MULTIPLE SOURCES' : '';
+                showStatus(`Starting scrape of ${state}${mode}${geocode ? ' with FREE geocoding' : ''}...`, 'info');
+                
+                const response = await fetch(`${API_BASE}/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ state, limit, geocode, multi_source: multiSource })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusInterval = setInterval(pollStatus, 500);
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                    scrapeBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    stateSelect.disabled = false;
+                    limitInput.disabled = false;
+                    geocodeCheckbox.disabled = false;
+                    multiSourceCheckbox.disabled = false;
+                }
+            } catch (error) {
+                showStatus('Error starting scrape: ' + error.message, 'error');
+                scrapeBtn.disabled = false;
+                stopBtn.disabled = true;
+                stateSelect.disabled = false;
+                limitInput.disabled = false;
+                geocodeCheckbox.disabled = false;
+                multiSourceCheckbox.disabled = false;
+            }
+        });
+
+        // Stop scraping
+        stopBtn.addEventListener('click', async () => {
+            try {
+                await fetch(`${API_BASE}/stop`, { method: 'POST' });
+                showStatus('Stopping scrape...', 'info');
+                stopBtn.disabled = true;
+            } catch (error) {
+                showStatus('Error stopping scrape: ' + error.message, 'error');
+            }
+        });
+
+        // Download results
+        downloadBtn.addEventListener('click', () => {
+            window.open(`${API_BASE}/download`, '_blank');
+            showStatus('Download started!', 'success');
+        });
+
+        // Initialize
+        loadStates();
+    </script>
+</body>
+</html>
