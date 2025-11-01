@@ -1,0 +1,7 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/survivor/public_html/wp-content/themes/kadence-child
+    - /bin/mkdir -p "$DEPLOYPATH"
+    - /bin/rsync -av --delete --exclude='.git' --exclude='.github' --exclude='.cpanel.yml' ./kadence-child/ "$DEPLOYPATH"/
+
