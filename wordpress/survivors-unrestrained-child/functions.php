@@ -94,3 +94,41 @@ function survivors_resource_browser_assets() {
     );
 }
 add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
+
+/**
+ * Register the Food Pantry Resource Browser template when editing pages.
+ *
+ * @param array $templates Existing page templates.
+ *
+ * @return array
+ */
+function survivors_register_resource_browser_template( $templates ) {
+    $templates['templates/page-food-pantry-resource-browser.php'] = __( 'Food Pantry Resource Browser', 'survivors-child' );
+
+    return $templates;
+}
+add_filter( 'theme_page_templates', 'survivors_register_resource_browser_template' );
+
+/**
+ * Load the Resource Browser template on the front end when it's assigned.
+ *
+ * @param string $template Path to the template WordPress is about to use.
+ *
+ * @return string
+ */
+function survivors_load_resource_browser_template( $template ) {
+    if ( is_page() ) {
+        $page_template = get_page_template_slug( get_queried_object_id() );
+
+        if ( 'templates/page-food-pantry-resource-browser.php' === $page_template ) {
+            $child_template = get_stylesheet_directory() . '/templates/page-food-pantry-resource-browser.php';
+
+            if ( file_exists( $child_template ) ) {
+                return $child_template;
+            }
+        }
+    }
+
+    return $template;
+}
+add_filter( 'template_include', 'survivors_load_resource_browser_template' );
