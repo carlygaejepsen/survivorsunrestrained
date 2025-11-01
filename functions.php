@@ -28,4 +28,4 @@ require get_template_directory() . '/inc/class-theme.php';
 require get_template_directory() . '/inc/functions.php';
 
 // Initialize the theme.
-call_user_func( 'Kadence\\kadence' );
+call_user_func( 'Kadence\kadence' );
