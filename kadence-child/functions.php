@@ -80,7 +80,8 @@ function survivors_resource_browser_assets() {
     $datasets_path = trailingslashit( get_stylesheet_directory() ) . 'assets/datasets';
     $datasets_url  = trailingslashit( get_stylesheet_directory_uri() ) . 'assets/datasets';
 
-    $states = array();
+    $datasets = array();
+    $states   = array();
     if ( is_dir( $datasets_path ) ) {
         $dataset_files = glob( $datasets_path . '/*_food_pantries_*.json' );
 
@@ -88,14 +89,30 @@ function survivors_resource_browser_assets() {
             foreach ( $dataset_files as $file ) {
                 $filename = basename( $file );
 
-                if ( preg_match( '/^([a-z]{2})_food_pantries_/i', $filename, $matches ) ) {
-                    $states[] = strtolower( $matches[1] );
+                if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', $filename, $matches ) ) {
+                    $state   = strtolower( $matches[1] );
+                    $version = $matches[2];
+
+                    // Keep the dataset with the most recent version number per state.
+                    if ( ! isset( $datasets[ $state ] ) || $version > $datasets[ $state ]['version'] ) {
+                        $datasets[ $state ] = array(
+                            'filename' => $filename,
+                            'version'  => $version,
+                        );
+                    }
                 }
             }
 
-            $states = array_unique( $states );
-            sort( $states );
+            if ( ! empty( $datasets ) ) {
+                ksort( $datasets );
+                $states = array_keys( $datasets );
+            }
         }
+    }
+
+    $datasets_map = array();
+    foreach ( $datasets as $state => $data ) {
+        $datasets_map[ $state ] = $data['filename'];
     }
 
     wp_localize_script(
@@ -104,6 +121,7 @@ function survivors_resource_browser_assets() {
         array(
             'datasetsBaseUrl' => $datasets_url,
             'states'          => array_values( $states ),
+            'datasets'        => $datasets_map,
             'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
                 'chooseState' => __( 'Choose State', 'survivors-child' ),
