@@ -4,6 +4,7 @@
     const config = window.suResourceBrowser || {};
     const datasetBaseUrl = config.datasetsBaseUrl ? config.datasetsBaseUrl.replace(/\/$/, '') : '';
     const availableStates = Array.isArray(config.states) ? config.states : [];
+    const datasetMap = config.datasets && typeof config.datasets === 'object' ? config.datasets : {};
     const labels = config.i18n || {};
     const cacheBuster = typeof config.cacheBuster === 'string' && config.cacheBuster.length
         ? config.cacheBuster
@@ -44,7 +45,9 @@
             return;
         }
 
-        if (!availableStates.length) {
+        const statesToRender = availableStates.length ? availableStates.slice() : Object.keys(datasetMap);
+
+        if (!statesToRender.length) {
             stateSelector.disabled = true;
             const placeholderOption = stateSelector.querySelector('option[value=""]');
             if (placeholderOption) {
@@ -55,7 +58,7 @@
 
         stateSelector.disabled = false;
         const fragment = document.createDocumentFragment();
-        availableStates.forEach(function (code) {
+        statesToRender.sort().forEach(function (code) {
             const option = document.createElement('option');
             option.value = code.toLowerCase();
             option.textContent = code.toUpperCase();
@@ -70,7 +73,14 @@
             return { data: null, url: null, error: 'Dataset location not configured.' };
         }
 
-        const basePath = datasetBaseUrl + '/' + stateCode.toLowerCase() + '_food_pantries_202510.json';
+        const normalizedState = stateCode.toLowerCase();
+        const datasetFilename = datasetMap[normalizedState];
+
+        if (!datasetFilename) {
+            return { data: null, url: null, error: 'Dataset file not found for state ' + stateCode.toUpperCase() + '.' };
+        }
+
+        const basePath = datasetBaseUrl + '/' + datasetFilename;
         const url = cacheBuster ? basePath + '?ver=' + encodeURIComponent(cacheBuster) : basePath;
 
         try {
@@ -198,6 +208,8 @@
             return;
         }
 
+        const stateLabel = (stateCode || '').toUpperCase();
+
         if (!dataset.length && rawDataset.length > 0) {
             container.innerHTML =
                 '<div class="su-card p-8 rounded-xl text-center border-l-4 border-yellow-500">' +
@@ -205,7 +217,7 @@
                 '<p class="text-gray-600">No food pantries matched the search term <strong>"' +
                 (filterTerm || '') +
                 '"</strong> in ' +
-                stateCode.toUpperCase() +
+                stateLabel +
                 '. Try a different term.</p>' +
                 '</div>';
             return;
@@ -216,7 +228,7 @@
                 '<div class="su-card p-8 rounded-xl text-center border-l-4 border-yellow-500">' +
                 '<h2 class="text-2xl font-bold text-yellow-600 mb-2">No Records Found</h2>' +
                 '<p class="text-gray-600">The dataset loaded successfully, but contained no food pantry records for ' +
-                stateCode.toUpperCase() +
+                stateLabel +
                 '.</p>' +
                 '</div>';
             return;
@@ -242,7 +254,7 @@
         container.innerHTML =
             '<div class="su-card p-6 rounded-xl">' +
             '<h2 class="text-2xl font-bold text-gray-800 mb-4">Food Pantries in ' +
-            stateCode.toUpperCase() +
+            stateLabel +
             ' (' + dataset.length + ' of ' + rawDataset.length + ' shown)</h2>' +
             '<ul class="divide-y divide-gray-100" id="pantry-list">' +
             listHtml +
@@ -366,8 +378,12 @@
         rawDataset = [];
 
         const result = await fetchDatasetByState(selectedState);
-        if (pathDisplay && result.url) {
-            pathDisplay.textContent = 'Fetching path: ' + result.url;
+        if (pathDisplay) {
+            if (result.error) {
+                pathDisplay.textContent = 'Fetching path: ' + (result.url || 'n/a');
+            } else if (result.url) {
+                pathDisplay.textContent = 'Loaded: ' + result.url;
+            }
         }
 
         if (result.error) {
@@ -383,6 +399,10 @@
         rawDataset = Array.isArray(result.data) ? result.data : [];
         currentStateCode = selectedState;
         filterAndRenderList('');
+
+        if (searchInput) {
+            searchInput.disabled = rawDataset.length === 0;
+        }
     }
 
     function attachEventListeners() {
