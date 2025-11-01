@@ -1,6 +1,7 @@
 <?php
 /**
  * Template Name: Food Pantry Resource Browser
+ * Template Post Type: page
  */
 
 global $post;

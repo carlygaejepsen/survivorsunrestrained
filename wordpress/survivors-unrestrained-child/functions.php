@@ -72,23 +72,44 @@ function survivors_resource_browser_assets() {
     wp_enqueue_script(
         'su-resource-browser',
         get_stylesheet_directory_uri() . '/assets/js/pantry-resource-browser.js',
-        array(),
+        array( 'su-tailwind' ),
         SU_CHILD_THEME_VERSION,
         true
     );
 
-    $datasets_dir = trailingslashit( get_stylesheet_directory_uri() ) . 'assets/datasets';
+    $datasets_path = trailingslashit( get_stylesheet_directory() ) . 'assets/datasets';
+    $datasets_url  = trailingslashit( get_stylesheet_directory_uri() ) . 'assets/datasets';
+
+    $states = array();
+    if ( is_dir( $datasets_path ) ) {
+        $dataset_files = glob( $datasets_path . '/*_food_pantries_*.json' );
+
+        if ( ! empty( $dataset_files ) ) {
+            foreach ( $dataset_files as $file ) {
+                $filename = basename( $file );
+
+                if ( preg_match( '/^([a-z]{2})_food_pantries_/i', $filename, $matches ) ) {
+                    $states[] = strtolower( $matches[1] );
+                }
+            }
+
+            $states = array_unique( $states );
+            sort( $states );
+        }
+    }
 
     wp_localize_script(
         'su-resource-browser',
         'suResourceBrowser',
         array(
-            'datasetsBaseUrl' => $datasets_dir,
-            'states'          => array( 'ak', 'al', 'ar', 'az', 'ca', 'co', 'ct', 'dc', 'de', 'fl', 'ga' ),
+            'datasetsBaseUrl' => $datasets_url,
+            'states'          => array_values( $states ),
+            'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
                 'chooseState' => __( 'Choose State', 'survivors-child' ),
                 'stateLabel'  => __( 'Select a State:', 'survivors-child' ),
-                'searchLabel' => __( 'Filter by Name or City:', 'survivors-child' )
+                'searchLabel' => __( 'Filter by Name or City:', 'survivors-child' ),
+                'noDatasets'  => __( 'No datasets available', 'survivors-child' ),
             )
         )
     );

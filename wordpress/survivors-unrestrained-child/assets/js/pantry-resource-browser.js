@@ -5,6 +5,9 @@
     const datasetBaseUrl = config.datasetsBaseUrl ? config.datasetsBaseUrl.replace(/\/$/, '') : '';
     const availableStates = Array.isArray(config.states) ? config.states : [];
     const labels = config.i18n || {};
+    const cacheBuster = typeof config.cacheBuster === 'string' && config.cacheBuster.length
+        ? config.cacheBuster
+        : '';
 
     let rawDataset = [];
     let currentDataset = [];
@@ -37,10 +40,20 @@
 
     function populateStateSelector() {
         const stateSelector = getElement('state-selector');
-        if (!stateSelector || !availableStates.length) {
+        if (!stateSelector) {
             return;
         }
 
+        if (!availableStates.length) {
+            stateSelector.disabled = true;
+            const placeholderOption = stateSelector.querySelector('option[value=""]');
+            if (placeholderOption) {
+                placeholderOption.textContent = labels.noDatasets || 'No datasets found';
+            }
+            return;
+        }
+
+        stateSelector.disabled = false;
         const fragment = document.createDocumentFragment();
         availableStates.forEach(function (code) {
             const option = document.createElement('option');
@@ -57,7 +70,8 @@
             return { data: null, url: null, error: 'Dataset location not configured.' };
         }
 
-        const url = datasetBaseUrl + '/' + stateCode.toLowerCase() + '_food_pantries_202510.json';
+        const basePath = datasetBaseUrl + '/' + stateCode.toLowerCase() + '_food_pantries_202510.json';
+        const url = cacheBuster ? basePath + '?ver=' + encodeURIComponent(cacheBuster) : basePath;
 
         try {
             const response = await fetch(url, { cache: 'no-cache' });
