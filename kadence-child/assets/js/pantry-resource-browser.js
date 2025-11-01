@@ -124,6 +124,74 @@
         }
     }
 
+    function formatLocation(city, state) {
+        const trimmedCity = typeof city === 'string' ? city.trim() : '';
+        const trimmedState = typeof state === 'string' ? state.trim() : '';
+
+        if (trimmedCity && trimmedState) {
+            return trimmedCity + ', ' + trimmedState;
+        }
+
+        if (trimmedCity) {
+            return trimmedCity;
+        }
+
+        if (trimmedState) {
+            return trimmedState;
+        }
+
+        return 'Location unavailable';
+    }
+
+    function formatCoordinates(latitude, longitude) {
+        var lat = typeof latitude === 'number' ? latitude : parseFloat(latitude);
+        var lon = typeof longitude === 'number' ? longitude : parseFloat(longitude);
+
+        if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+            return lat + ', ' + lon;
+        }
+
+        return 'N/A';
+    }
+
+    function formatCityStateZip(city, state, zip) {
+        var trimmedCity = typeof city === 'string' ? city.trim() : '';
+        var trimmedState = typeof state === 'string' ? state.trim() : '';
+        var trimmedZip = typeof zip === 'string' ? zip.trim() : '';
+
+        var locationParts = [];
+        if (trimmedCity) {
+            locationParts.push(trimmedCity);
+        }
+        if (trimmedState) {
+            locationParts.push(trimmedState);
+        }
+
+        var components = [];
+        if (locationParts.length) {
+            components.push(locationParts.join(', '));
+        }
+        if (trimmedZip) {
+            components.push(trimmedZip);
+        }
+
+        return components.length ? components.join(' ') : 'Not available';
+    }
+
+    function formatScrapedDate(scrapedAt) {
+        if (!scrapedAt) {
+            return 'Scraped At: Not available';
+        }
+
+        const parsedDate = new Date(scrapedAt);
+
+        if (Number.isNaN(parsedDate.getTime())) {
+            return 'Scraped At: Not available';
+        }
+
+        return 'Scraped At: ' + parsedDate.toLocaleString();
+    }
+
     function renderListView(dataset, stateCode, filterTerm) {
         const container = getElement('pantry-card-container');
         if (!container) {
@@ -156,12 +224,16 @@
 
         const listHtml = dataset
             .map(function (item) {
+                var pantryName = typeof item.name === 'string' && item.name.trim().length
+                    ? item.name.trim()
+                    : 'Unnamed Pantry';
+
                 return (
                     '<li class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out" data-id="' +
                     item.id +
                     '">' +
-                    '<h3 class="text-xl font-semibold text-primary">' + item.name + '</h3>' +
-                    '<p class="text-sm text-gray-600">' + item.city + ', ' + item.state + '</p>' +
+                    '<h3 class="text-xl font-semibold text-primary">' + pantryName + '</h3>' +
+                    '<p class="text-sm text-gray-600">' + formatLocation(item.city, item.state) + '</p>' +
                     '</li>'
                 );
             })
@@ -194,6 +266,13 @@
             ? '<a href="tel:' + (record.phone || '').replace(/[^0-9]/g, '') + '" class="text-primary hover:text-green-700 underline">' + record.phone + '</a>'
             : 'N/A';
 
+        var detailTitle = typeof record.name === 'string' && record.name.trim().length
+            ? record.name.trim()
+            : 'Unnamed Pantry';
+        var recordId = typeof record.id === 'number' || (typeof record.id === 'string' && record.id.trim().length)
+            ? record.id
+            : 'N/A';
+
         container.innerHTML =
             '<div class="su-card p-6 sm:p-8 rounded-xl transition-all duration-300">' +
             '<button type="button" class="mb-4 text-sm text-primary hover:text-green-700 font-medium flex items-center p-2 rounded-lg transition duration-150 ease-in-out" id="back-to-list">' +
@@ -203,17 +282,17 @@
             'Back to List' +
             '</button>' +
             '<div class="flex items-center justify-between mb-6 border-b pb-4 border-primary/20">' +
-            '<h2 class="text-3xl font-extrabold text-gray-900">' + record.name + '</h2>' +
-            '<span class="bg-primary text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">ID: ' + record.id + '</span>' +
+            '<h2 class="text-3xl font-extrabold text-gray-900">' + detailTitle + '</h2>' +
+            '<span class="bg-primary text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">ID: ' + recordId + '</span>' +
             '</div>' +
             '<div class="divide-y divide-gray-200">' +
             '<h3 class="text-xl font-semibold text-gray-700 mt-4 mb-2 pt-4">Location</h3>' +
             createDetailRow('Street Address', record.address) +
-            createDetailRow('City, State, Zip', record.city + ', ' + record.state + ' ' + record.zip) +
+            createDetailRow('City, State, Zip', formatCityStateZip(record.city, record.state, record.zip)) +
             createDetailRow('Geocoded Address', record.geocoded_address) +
             '<div class="py-2 border-b border-gray-100 flex flex-col sm:flex-row sm:items-baseline">' +
             '<span class="detail-label w-full sm:w-1/3">Map Coordinates:</span>' +
-            '<span class="detail-value w-full sm:w-2/3">' + record.latitude + ', ' + record.longitude + '</span>' +
+            '<span class="detail-value w-full sm:w-2/3">' + formatCoordinates(record.latitude, record.longitude) + '</span>' +
             '</div>' +
             '<h3 class="text-xl font-semibold text-gray-700 mt-4 mb-2 pt-4">Operation</h3>' +
             createDetailRow('Hours/Volunteering', record.hours) +
@@ -223,7 +302,7 @@
             createDetailRow('Phone', phoneLink) +
             createDetailRow('Email', emailLink) +
             createDetailRow('Website', websiteLink) +
-            '<p class="text-xs text-gray-400 mt-6 pt-4 text-right">Scraped At: ' + new Date(record.scraped_at).toLocaleString() + '</p>' +
+            '<p class="text-xs text-gray-400 mt-6 pt-4 text-right">' + formatScrapedDate(record.scraped_at) + '</p>' +
             '</div>' +
             '</div>';
 
