@@ -83,6 +83,12 @@ function survivors_resource_browser_assets() {
     wp_add_inline_script( 'su-tailwind', $tailwind_config, 'before' );
     wp_enqueue_script( 'su-tailwind' );
 
+    // Use file modification time for effective cache busting.
+    $js_version = file_exists( get_stylesheet_directory() . '/assets/js/pantry-resource-browser.js' )
+        ? filemtime( get_stylesheet_directory() . '/assets/js/pantry-resource-browser.js' )
+        : SU_CHILD_THEME_VERSION;
+
+
     $resource_css_path = get_stylesheet_directory() . '/assets/css/pantry-resource-browser.css';
     $resource_css_version = file_exists( $resource_css_path ) ? filemtime( $resource_css_path ) : SU_CHILD_THEME_VERSION;
 
@@ -93,14 +99,11 @@ function survivors_resource_browser_assets() {
         $resource_css_version
     );
 
-    $resource_js_path = get_stylesheet_directory() . '/assets/js/pantry-resource-browser.js';
-    $resource_js_version = file_exists( $resource_js_path ) ? filemtime( $resource_js_path ) : SU_CHILD_THEME_VERSION;
-
     wp_enqueue_script(
         'su-resource-browser',
         get_stylesheet_directory_uri() . '/assets/js/pantry-resource-browser.js',
         array( 'su-tailwind' ),
-        $resource_js_version,
+        $js_version,
         true
     );
 
@@ -109,31 +112,19 @@ function survivors_resource_browser_assets() {
 
     $datasets = array();
     $states   = array();
+
     if ( is_dir( $datasets_path ) ) {
-        $dataset_files = glob( $datasets_path . '/*_food_pantries_*.json' );
-
-			if ( ! empty( $dataset_files ) ) {
-				foreach ( $dataset_files as $file ) {
-					$filename = basename( $file );
-
-                if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', $filename, $matches ) ) {
-                    $state   = strtolower( $matches[1] );
-                    $version = $matches[2];
-
-                    // Keep the dataset with the most recent version number per state.
-                    if ( ! isset( $datasets[ $state ] ) || $version > $datasets[ $state ]['version'] ) {
-                        $datasets[ $state ] = array(
-                            'filename' => $filename,
-                            'version'  => $version,
-                        );
-                    }
-                }
+        // Find all dataset files and group them by state.
+        foreach ( glob( $datasets_path . '/*_food_pantries_*.json' ) as $file ) {
+            if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', basename( $file ), $matches ) ) {
+                $datasets[ strtolower( $matches[1] ) ][] = basename( $file );
             }
+        }
 
-            if ( ! empty( $datasets ) ) {
-                ksort( $datasets );
-                $states = array_keys( $datasets );
-            }
+        // For each state, find the file with the highest version number.
+        foreach ( $datasets as $state => $files ) {
+            natsort( $files ); // Natural sort handles version numbers correctly (e.g., 'v10' > 'v2').
+            $datasets[ $state ] = end( $files );
         }
     }
 
@@ -148,7 +139,7 @@ function survivors_resource_browser_assets() {
         array(
             'datasetsBaseUrl' => $datasets_url,
             'states'          => array_values( $states ),
-            'datasets'        => $datasets_map,
+            'datasets'        => $datasets,
             'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
                 'chooseState' => __( 'Choose State', 'survivors-child' ),
