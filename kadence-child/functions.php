@@ -80,7 +80,7 @@ function survivors_resource_browser_assets() {
             }
         };
     JS;
-    wp_add_inline_script( 'su-tailwind', $tailwind_config, 'before' );
+    wp_add_inline_script( 'su-tailwind', $tailwind_config, 'after' );
     wp_enqueue_script( 'su-tailwind' );
 
     // Use file modification time for effective cache busting.
