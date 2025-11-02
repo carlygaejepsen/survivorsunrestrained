@@ -33,10 +33,30 @@ function survivors_child_enqueue_styles() {
 add_action( 'wp_enqueue_scripts', 'survivors_child_enqueue_styles' );
 
 /**
+ * Determine whether the current request is rendering the Food Pantry Resource Browser page.
+ *
+ * @return bool
+ */
+function survivors_is_resource_browser_page() {
+    if ( ! is_singular( 'page' ) ) {
+        return false;
+    }
+
+    $queried_id = get_queried_object_id();
+    if ( ! $queried_id ) {
+        return false;
+    }
+
+    $template = get_page_template_slug( $queried_id );
+
+    return 'templates/page-food-pantry-resource-browser.php' === $template;
+}
+
+/**
  * Enqueue Food Pantry Resource Browser assets only when needed.
  */
 function survivors_resource_browser_assets() {
-    if ( ! is_page_template( 'templates/page-food-pantry-resource-browser.php' ) ) {
+    if ( ! survivors_is_resource_browser_page() ) {
         return;
     }
 
@@ -62,25 +82,32 @@ function survivors_resource_browser_assets() {
     wp_add_inline_script( 'su-tailwind', $tailwind_config, 'before' );
     wp_enqueue_script( 'su-tailwind' );
 
+    $resource_css_path = get_stylesheet_directory() . '/assets/css/pantry-resource-browser.css';
+    $resource_css_version = file_exists( $resource_css_path ) ? filemtime( $resource_css_path ) : SU_CHILD_THEME_VERSION;
+
     wp_enqueue_style(
         'su-resource-browser',
         get_stylesheet_directory_uri() . '/assets/css/pantry-resource-browser.css',
         array( 'survivors-child-style' ),
-        SU_CHILD_THEME_VERSION
+        $resource_css_version
     );
+
+    $resource_js_path = get_stylesheet_directory() . '/assets/js/pantry-resource-browser.js';
+    $resource_js_version = file_exists( $resource_js_path ) ? filemtime( $resource_js_path ) : SU_CHILD_THEME_VERSION;
 
     wp_enqueue_script(
         'su-resource-browser',
         get_stylesheet_directory_uri() . '/assets/js/pantry-resource-browser.js',
         array( 'su-tailwind' ),
-        SU_CHILD_THEME_VERSION,
+        $resource_js_version,
         true
     );
 
     $datasets_path = trailingslashit( get_stylesheet_directory() ) . 'assets/datasets';
     $datasets_url  = trailingslashit( get_stylesheet_directory_uri() ) . 'assets/datasets';
 
-    $states = array();
+    $datasets = array();
+    $states   = array();
     if ( is_dir( $datasets_path ) ) {
         $dataset_files = glob( $datasets_path . '/*_food_pantries_*.json' );
 
@@ -88,14 +115,30 @@ function survivors_resource_browser_assets() {
             foreach ( $dataset_files as $file ) {
                 $filename = basename( $file );
 
-                if ( preg_match( '/^([a-z]{2})_food_pantries_/i', $filename, $matches ) ) {
-                    $states[] = strtolower( $matches[1] );
+                if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', $filename, $matches ) ) {
+                    $state   = strtolower( $matches[1] );
+                    $version = $matches[2];
+
+                    // Keep the dataset with the most recent version number per state.
+                    if ( ! isset( $datasets[ $state ] ) || $version > $datasets[ $state ]['version'] ) {
+                        $datasets[ $state ] = array(
+                            'filename' => $filename,
+                            'version'  => $version,
+                        );
+                    }
                 }
             }
 
-            $states = array_unique( $states );
-            sort( $states );
+            if ( ! empty( $datasets ) ) {
+                ksort( $datasets );
+                $states = array_keys( $datasets );
+            }
         }
+    }
+
+    $datasets_map = array();
+    foreach ( $datasets as $state => $data ) {
+        $datasets_map[ $state ] = $data['filename'];
     }
 
     wp_localize_script(
@@ -104,6 +147,7 @@ function survivors_resource_browser_assets() {
         array(
             'datasetsBaseUrl' => $datasets_url,
             'states'          => array_values( $states ),
+            'datasets'        => $datasets_map,
             'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
                 'chooseState' => __( 'Choose State', 'survivors-child' ),
@@ -138,15 +182,11 @@ add_filter( 'theme_page_templates', 'survivors_register_resource_browser_templat
  * @return string
  */
 function survivors_load_resource_browser_template( $template ) {
-    if ( is_page() ) {
-        $page_template = get_page_template_slug( get_queried_object_id() );
+    if ( survivors_is_resource_browser_page() ) {
+        $child_template = get_stylesheet_directory() . '/templates/page-food-pantry-resource-browser.php';
 
-        if ( 'templates/page-food-pantry-resource-browser.php' === $page_template ) {
-            $child_template = get_stylesheet_directory() . '/templates/page-food-pantry-resource-browser.php';
-
-            if ( file_exists( $child_template ) ) {
-                return $child_template;
-            }
+        if ( file_exists( $child_template ) ) {
+            return $child_template;
         }
     }
 

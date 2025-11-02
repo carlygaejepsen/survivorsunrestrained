@@ -1,7 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/survivor/public_html/wp-content/themes/kadence-child
-    - /bin/mkdir -p "$DEPLOYPATH"
-    - /bin/rsync -av --delete --exclude='.git' --exclude='.github' --exclude='.cpanel.yml' ./kadence-child/ "$DEPLOYPATH"/
+    - /bin/bash -lc 'DEPLOYPATH="/home/survivor/public_html/wp-content/themes/kadence-child"; mkdir -p "${DEPLOYPATH}"'
+    - /bin/bash -lc 'DEPLOYPATH="/home/survivor/public_html/wp-content/themes/kadence-child"; if command -v rsync >/dev/null 2>&1; then rsync -av --delete --exclude=".git" --exclude=".github" --exclude=".cpanel.yml" ./kadence-child/ "${DEPLOYPATH}/"; else echo "rsync not available, falling back to cp -a"; /bin/cp -a ./kadence-child/. "${DEPLOYPATH}/"; fi'
 
