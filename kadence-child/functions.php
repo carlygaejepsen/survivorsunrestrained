@@ -130,7 +130,7 @@ function survivors_resource_browser_assets() {
 
     $datasets_map = array();
     foreach ( $datasets as $state => $data ) {
-        $datasets_map[ $state ] = $data['filename'];
+        $datasets_map[ $state ] = $data;
     }
 
     wp_localize_script(
