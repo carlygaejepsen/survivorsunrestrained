@@ -4,6 +4,7 @@
     const config = window.suResourceBrowser || {};
     const datasetBaseUrl = config.datasetsBaseUrl ? config.datasetsBaseUrl.replace(/\/$/, '') : '';
     const availableStates = Array.isArray(config.states) ? config.states : [];
+    const datasetMap = config.datasets && typeof config.datasets === 'object' ? config.datasets : {};
     const labels = config.i18n || {};
     const cacheBuster = typeof config.cacheBuster === 'string' && config.cacheBuster.length
         ? config.cacheBuster
@@ -44,7 +45,9 @@
             return;
         }
 
-        if (!availableStates.length) {
+        const statesToRender = availableStates.length ? availableStates.slice() : Object.keys(datasetMap);
+
+        if (!statesToRender.length) {
             stateSelector.disabled = true;
             const placeholderOption = stateSelector.querySelector('option[value=""]');
             if (placeholderOption) {
@@ -55,7 +58,7 @@
 
         stateSelector.disabled = false;
         const fragment = document.createDocumentFragment();
-        availableStates.forEach(function (code) {
+        statesToRender.sort().forEach(function (code) {
             const option = document.createElement('option');
             option.value = code.toLowerCase();
             option.textContent = code.toUpperCase();
@@ -70,7 +73,14 @@
             return { data: null, url: null, error: 'Dataset location not configured.' };
         }
 
-        const basePath = datasetBaseUrl + '/' + stateCode.toLowerCase() + '_food_pantries_202510.json';
+        const normalizedState = stateCode.toLowerCase();
+        const datasetFilename = datasetMap[normalizedState];
+
+        if (!datasetFilename) {
+            return { data: null, url: null, error: 'Dataset file not found for state ' + stateCode.toUpperCase() + '.' };
+        }
+
+        const basePath = datasetBaseUrl + '/' + datasetFilename;
         const url = cacheBuster ? basePath + '?ver=' + encodeURIComponent(cacheBuster) : basePath;
 
         try {
@@ -124,11 +134,81 @@
         }
     }
 
+    function formatLocation(city, state) {
+        const trimmedCity = typeof city === 'string' ? city.trim() : '';
+        const trimmedState = typeof state === 'string' ? state.trim() : '';
+
+        if (trimmedCity && trimmedState) {
+            return trimmedCity + ', ' + trimmedState;
+        }
+
+        if (trimmedCity) {
+            return trimmedCity;
+        }
+
+        if (trimmedState) {
+            return trimmedState;
+        }
+
+        return 'Location unavailable';
+    }
+
+    function formatCoordinates(latitude, longitude) {
+        var lat = typeof latitude === 'number' ? latitude : parseFloat(latitude);
+        var lon = typeof longitude === 'number' ? longitude : parseFloat(longitude);
+
+        if (!Number.isNaN(lat) && !Number.isNaN(lon)) {
+            return lat + ', ' + lon;
+        }
+
+        return 'N/A';
+    }
+
+    function formatCityStateZip(city, state, zip) {
+        var trimmedCity = typeof city === 'string' ? city.trim() : '';
+        var trimmedState = typeof state === 'string' ? state.trim() : '';
+        var trimmedZip = typeof zip === 'string' ? zip.trim() : '';
+
+        var locationParts = [];
+        if (trimmedCity) {
+            locationParts.push(trimmedCity);
+        }
+        if (trimmedState) {
+            locationParts.push(trimmedState);
+        }
+
+        var components = [];
+        if (locationParts.length) {
+            components.push(locationParts.join(', '));
+        }
+        if (trimmedZip) {
+            components.push(trimmedZip);
+        }
+
+        return components.length ? components.join(' ') : 'Not available';
+    }
+
+    function formatScrapedDate(scrapedAt) {
+        if (!scrapedAt) {
+            return 'Scraped At: Not available';
+        }
+
+        const parsedDate = new Date(scrapedAt);
+
+        if (Number.isNaN(parsedDate.getTime())) {
+            return 'Scraped At: Not available';
+        }
+
+        return 'Scraped At: ' + parsedDate.toLocaleString();
+    }
+
     function renderListView(dataset, stateCode, filterTerm) {
         const container = getElement('pantry-card-container');
         if (!container) {
             return;
         }
+
+        const stateLabel = (stateCode || '').toUpperCase();
 
         if (!dataset.length && rawDataset.length > 0) {
             container.innerHTML =
@@ -137,7 +217,7 @@
                 '<p class="text-gray-600">No food pantries matched the search term <strong>"' +
                 (filterTerm || '') +
                 '"</strong> in ' +
-                stateCode.toUpperCase() +
+                stateLabel +
                 '. Try a different term.</p>' +
                 '</div>';
             return;
@@ -148,7 +228,7 @@
                 '<div class="su-card p-8 rounded-xl text-center border-l-4 border-yellow-500">' +
                 '<h2 class="text-2xl font-bold text-yellow-600 mb-2">No Records Found</h2>' +
                 '<p class="text-gray-600">The dataset loaded successfully, but contained no food pantry records for ' +
-                stateCode.toUpperCase() +
+                stateLabel +
                 '.</p>' +
                 '</div>';
             return;
@@ -156,12 +236,16 @@
 
         const listHtml = dataset
             .map(function (item) {
+                var pantryName = typeof item.name === 'string' && item.name.trim().length
+                    ? item.name.trim()
+                    : 'Unnamed Pantry';
+
                 return (
                     '<li class="p-4 border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition duration-150 ease-in-out" data-id="' +
                     item.id +
                     '">' +
-                    '<h3 class="text-xl font-semibold text-primary">' + item.name + '</h3>' +
-                    '<p class="text-sm text-gray-600">' + item.city + ', ' + item.state + '</p>' +
+                    '<h3 class="text-xl font-semibold text-primary">' + pantryName + '</h3>' +
+                    '<p class="text-sm text-gray-600">' + formatLocation(item.city, item.state) + '</p>' +
                     '</li>'
                 );
             })
@@ -170,7 +254,7 @@
         container.innerHTML =
             '<div class="su-card p-6 rounded-xl">' +
             '<h2 class="text-2xl font-bold text-gray-800 mb-4">Food Pantries in ' +
-            stateCode.toUpperCase() +
+            stateLabel +
             ' (' + dataset.length + ' of ' + rawDataset.length + ' shown)</h2>' +
             '<ul class="divide-y divide-gray-100" id="pantry-list">' +
             listHtml +
@@ -194,6 +278,13 @@
             ? '<a href="tel:' + (record.phone || '').replace(/[^0-9]/g, '') + '" class="text-primary hover:text-green-700 underline">' + record.phone + '</a>'
             : 'N/A';
 
+        var detailTitle = typeof record.name === 'string' && record.name.trim().length
+            ? record.name.trim()
+            : 'Unnamed Pantry';
+        var recordId = typeof record.id === 'number' || (typeof record.id === 'string' && record.id.trim().length)
+            ? record.id
+            : 'N/A';
+
         container.innerHTML =
             '<div class="su-card p-6 sm:p-8 rounded-xl transition-all duration-300">' +
             '<button type="button" class="mb-4 text-sm text-primary hover:text-green-700 font-medium flex items-center p-2 rounded-lg transition duration-150 ease-in-out" id="back-to-list">' +
@@ -203,17 +294,17 @@
             'Back to List' +
             '</button>' +
             '<div class="flex items-center justify-between mb-6 border-b pb-4 border-primary/20">' +
-            '<h2 class="text-3xl font-extrabold text-gray-900">' + record.name + '</h2>' +
-            '<span class="bg-primary text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">ID: ' + record.id + '</span>' +
+            '<h2 class="text-3xl font-extrabold text-gray-900">' + detailTitle + '</h2>' +
+            '<span class="bg-primary text-white text-sm font-semibold px-3 py-1 rounded-full shadow-md">ID: ' + recordId + '</span>' +
             '</div>' +
             '<div class="divide-y divide-gray-200">' +
             '<h3 class="text-xl font-semibold text-gray-700 mt-4 mb-2 pt-4">Location</h3>' +
             createDetailRow('Street Address', record.address) +
-            createDetailRow('City, State, Zip', record.city + ', ' + record.state + ' ' + record.zip) +
+            createDetailRow('City, State, Zip', formatCityStateZip(record.city, record.state, record.zip)) +
             createDetailRow('Geocoded Address', record.geocoded_address) +
             '<div class="py-2 border-b border-gray-100 flex flex-col sm:flex-row sm:items-baseline">' +
             '<span class="detail-label w-full sm:w-1/3">Map Coordinates:</span>' +
-            '<span class="detail-value w-full sm:w-2/3">' + record.latitude + ', ' + record.longitude + '</span>' +
+            '<span class="detail-value w-full sm:w-2/3">' + formatCoordinates(record.latitude, record.longitude) + '</span>' +
             '</div>' +
             '<h3 class="text-xl font-semibold text-gray-700 mt-4 mb-2 pt-4">Operation</h3>' +
             createDetailRow('Hours/Volunteering', record.hours) +
@@ -223,7 +314,7 @@
             createDetailRow('Phone', phoneLink) +
             createDetailRow('Email', emailLink) +
             createDetailRow('Website', websiteLink) +
-            '<p class="text-xs text-gray-400 mt-6 pt-4 text-right">Scraped At: ' + new Date(record.scraped_at).toLocaleString() + '</p>' +
+            '<p class="text-xs text-gray-400 mt-6 pt-4 text-right">' + formatScrapedDate(record.scraped_at) + '</p>' +
             '</div>' +
             '</div>';
 
@@ -287,8 +378,12 @@
         rawDataset = [];
 
         const result = await fetchDatasetByState(selectedState);
-        if (pathDisplay && result.url) {
-            pathDisplay.textContent = 'Fetching path: ' + result.url;
+        if (pathDisplay) {
+            if (result.error) {
+                pathDisplay.textContent = 'Fetching path: ' + (result.url || 'n/a');
+            } else if (result.url) {
+                pathDisplay.textContent = 'Loaded: ' + result.url;
+            }
         }
 
         if (result.error) {
@@ -304,6 +399,10 @@
         rawDataset = Array.isArray(result.data) ? result.data : [];
         currentStateCode = selectedState;
         filterAndRenderList('');
+
+        if (searchInput) {
+            searchInput.disabled = rawDataset.length === 0;
+        }
     }
 
     function attachEventListeners() {
