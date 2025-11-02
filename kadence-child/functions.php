@@ -111,7 +111,6 @@ function survivors_resource_browser_assets() {
 		$datasets_url  = trailingslashit( get_stylesheet_directory_uri() ) . 'assets/datasets';
 
     $datasets = array();
-    $states   = array();
 
     if ( is_dir( $datasets_path ) ) {
         // Find all dataset files and group them by state.
@@ -128,17 +127,11 @@ function survivors_resource_browser_assets() {
         }
     }
 
-    $datasets_map = array();
-    foreach ( $datasets as $state => $data ) {
-        $datasets_map[ $state ] = $data;
-    }
-
     wp_localize_script(
         'su-resource-browser',
         'suResourceBrowser',
         array(
             'datasetsBaseUrl' => $datasets_url,
-            'states'          => array_values( $states ),
             'datasets'        => $datasets,
             'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
