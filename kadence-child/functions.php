@@ -118,7 +118,7 @@ function survivors_resource_browser_assets() {
         if ( is_array( $dataset_files ) && ! empty( $dataset_files ) ) {
             // Find all dataset files and group them by state.
             foreach ( $dataset_files as $file ) {
-                if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', basename( $file ), $matches ) ) {
+                if ( preg_match( '/^([a-z]{2})_food_pantries_[\d_]+\.json$/i', basename( $file ), $matches ) ) {
                     $state = strtolower( $matches[1] );
                     if ( ! isset( $datasets[ $state ] ) ) {
                         $datasets[ $state ] = array();
