@@ -113,17 +113,29 @@ function survivors_resource_browser_assets() {
     $datasets = array();
 
     if ( is_dir( $datasets_path ) ) {
-        // Find all dataset files and group them by state.
-        foreach ( glob( $datasets_path . '/*_food_pantries_*.json' ) as $file ) {
-            if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', basename( $file ), $matches ) ) {
-                $datasets[ strtolower( $matches[1] ) ][] = basename( $file );
-            }
-        }
+        $dataset_files = glob( $datasets_path . '/*_food_pantries_*.json' );
 
-        // For each state, find the file with the highest version number.
-        foreach ( $datasets as $state => $files ) {
-            natsort( $files ); // Natural sort handles version numbers correctly (e.g., 'v10' > 'v2').
-            $datasets[ $state ] = end( $files );
+        if ( is_array( $dataset_files ) && ! empty( $dataset_files ) ) {
+            // Find all dataset files and group them by state.
+            foreach ( $dataset_files as $file ) {
+                if ( preg_match( '/^([a-z]{2})_food_pantries_(\d+)\.json$/i', basename( $file ), $matches ) ) {
+                    $state = strtolower( $matches[1] );
+                    if ( ! isset( $datasets[ $state ] ) ) {
+                        $datasets[ $state ] = array();
+                    }
+                    $datasets[ $state ][] = basename( $file );
+                }
+            }
+
+            // For each state, find the file with the highest version number.
+            $final_datasets = array();
+            foreach ( $datasets as $state => $files ) {
+                if ( is_array( $files ) && ! empty( $files ) ) {
+                    natsort( $files );
+                    $final_datasets[ $state ] = end( $files );
+                }
+            }
+            $datasets = $final_datasets;
         }
     }
 
@@ -178,13 +190,8 @@ function survivors_load_resource_browser_template( $template ) {
 
 /**
  * Set up child theme hooks.
- *
- * This function is hooked into 'after_setup_theme' to ensure the parent theme is loaded.
  */
-function survivors_unrestrained_child_theme_setup() {
-	add_action( 'wp_enqueue_scripts', 'survivors_child_enqueue_styles' );
-	add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
-	add_filter( 'theme_page_templates', 'survivors_register_resource_browser_template' );
-	add_filter( 'template_include', 'survivors_load_resource_browser_template' );
-}
-add_action( 'after_setup_theme', 'survivors_unrestrained_child_theme_setup' );
+add_action( 'wp_enqueue_scripts', 'survivors_child_enqueue_styles' );
+add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
+add_filter( 'theme_page_templates', 'survivors_register_resource_browser_template' );
+add_filter( 'template_include', 'survivors_load_resource_browser_template' );
