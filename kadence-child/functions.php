@@ -10,35 +10,28 @@ if ( ! defined( 'SU_CHILD_THEME_VERSION' ) ) {
 }
 
 /**
- * Child theme setup.
+ * Enqueue parent/child styles.
  */
-function survivors_unrestrained_child_theme_setup() {
-	/**
-	 * Enqueue parent/child styles.
-	 */
-	function survivors_child_enqueue_styles() {
-		$theme      = wp_get_theme();
-		$parent     = $theme->parent();
-		$parent_dep = array();
+function survivors_child_enqueue_styles() {
+	$theme  = wp_get_theme();
+	$parent = $theme->parent();
 
-		if ( $parent ) {
-			wp_enqueue_style(
-				'survivors-parent-style',
-				get_template_directory_uri() . '/style.css',
-				array(),
-				$parent->get( 'Version' )
-			);
-			$parent_dep[] = 'survivors-parent-style';
-		}
+	// It's best practice to load the parent theme's stylesheet.
+	// Kadence handles this, but it's good to have for other themes.
+	wp_enqueue_style(
+		'survivors-parent-style',
+		get_template_directory_uri() . '/style.css',
+		array(),
+		$parent ? $parent->get( 'Version' ) : ''
+	);
 
-    wp_enqueue_style(
-        'survivors-child-style',
-        get_stylesheet_uri(),
-        $parent_dep,
-        $theme->get( 'Version' ) ? $theme->get( 'Version' ) : SU_CHILD_THEME_VERSION
-    );
+	wp_enqueue_style(
+		'survivors-child-style',
+		get_stylesheet_uri(),
+		array( 'survivors-parent-style' ),
+		$theme->get( 'Version' ) ? $theme->get( 'Version' ) : SU_CHILD_THEME_VERSION
+	);
 }
-add_action( 'wp_enqueue_scripts', 'survivors_child_enqueue_styles' );
 
 /**
  * Determine whether the current request is rendering the Food Pantry Resource Browser page.
@@ -166,7 +159,6 @@ function survivors_resource_browser_assets() {
         )
     );
 }
-add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
 
 	/**
 	 * Register the Food Pantry Resource Browser template when editing pages.
@@ -180,7 +172,6 @@ add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
 
 		return $templates;
 	}
-	add_filter( 'theme_page_templates', 'survivors_register_resource_browser_template' );
 
 /**
  * Load the Resource Browser template on the front end when it's assigned.
@@ -200,6 +191,16 @@ function survivors_load_resource_browser_template( $template ) {
 
 		return $template;
 	}
+
+/**
+ * Set up child theme hooks.
+ *
+ * This function is hooked into 'after_setup_theme' to ensure the parent theme is loaded.
+ */
+function survivors_unrestrained_child_theme_setup() {
+	add_action( 'wp_enqueue_scripts', 'survivors_child_enqueue_styles' );
+	add_action( 'wp_enqueue_scripts', 'survivors_resource_browser_assets' );
+	add_filter( 'theme_page_templates', 'survivors_register_resource_browser_template' );
 	add_filter( 'template_include', 'survivors_load_resource_browser_template' );
 }
 add_action( 'after_setup_theme', 'survivors_unrestrained_child_theme_setup' );
