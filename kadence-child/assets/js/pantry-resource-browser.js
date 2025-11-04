@@ -260,6 +260,24 @@
             listHtml +
             '</ul>' +
             '</div>';
+
+        // Re-attach click handlers to ensure list items are clickable
+        const pantryList = document.getElementById('pantry-list');
+        if (pantryList) {
+            const items = pantryList.querySelectorAll('li[data-id]');
+            items.forEach(function(item) {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', function() {
+                    const id = parseInt(item.getAttribute('data-id'), 10);
+                    const record = currentDataset.find(function (r) {
+                        return r.id === id;
+                    });
+                    if (record) {
+                        renderDetailView(record);
+                    }
+                });
+            });
+        }
     }
 
     function renderDetailView(record) {
