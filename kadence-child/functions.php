@@ -6,7 +6,7 @@
  */
 
 if ( ! defined( 'SU_CHILD_THEME_VERSION' ) ) {
-	define( 'SU_CHILD_THEME_VERSION', '1.0.1' );
+	define( 'SU_CHILD_THEME_VERSION', '1.0.2' );
 }
 
 /**
