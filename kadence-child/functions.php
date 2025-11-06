@@ -145,6 +145,7 @@ function survivors_resource_browser_assets() {
         array(
             'datasetsBaseUrl' => $datasets_url,
             'datasets'        => $datasets,
+            'states'          => array_keys( $datasets ),
             'cacheBuster'     => SU_CHILD_THEME_VERSION,
             'i18n'            => array(
                 'chooseState' => __( 'Choose State', 'survivors-child' ),

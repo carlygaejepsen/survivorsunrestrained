@@ -183,6 +183,24 @@
         let currentDataset = [];   // Stores the currently displayed (filtered) dataset
         let currentStateCode = null; // Store the currently loaded state
 
+        // All available states with datasets
+        const availableStates = ['ak', 'al', 'ar', 'az', 'ca', 'co', 'ct', 'dc', 'de', 'fl', 'ga', 'hi', 'ia', 'id', 'il', 'in', 'ks', 'ky', 'la', 'ma', 'md', 'me', 'mi', 'mn', 'mo', 'ms', 'mt', 'nc', 'nd', 'ne', 'nh', 'nj', 'nm', 'nv', 'ny', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'va', 'vt', 'wa', 'wi', 'wv', 'wy'];
+
+        /**
+         * Populates the state selector dropdown with all available states
+         */
+        function populateStateSelector() {
+            const stateSelector = document.getElementById('state-selector');
+            if (!stateSelector) return;
+
+            availableStates.forEach(stateCode => {
+                const option = document.createElement('option');
+                option.value = stateCode.toLowerCase();
+                option.textContent = stateCode.toUpperCase();
+                stateSelector.appendChild(option);
+            });
+        }
+
         /**
          * Fetches the entire dataset array for a given state.
          * @param {string} stateCode The two-letter state code (e.g., 'ak', 'ca').
@@ -191,8 +209,8 @@
         async function fetchDatasetByState(stateCode) {
             if (!stateCode) return { data: null, url: null };
 
-            // Construct the dynamic file path as requested: ../Private/Datasets/<inputstate>_food_pantries_202510.json
-            const url = `./Datasets/${stateCode.toLowerCase()}_food_pantries_202510.json`;
+            // Construct the dynamic file path pointing to kadence-child assets
+            const url = `./kadence-child/assets/datasets/${stateCode.toLowerCase()}_food_pantries_202510.json`;
             console.log('Attempting to fetch data from:', url);
 
             try {
@@ -424,12 +442,15 @@
 
         /** Function to attach all necessary event listeners and start the application. */
         function initializeApp() {
+            // First, populate the state selector with all available states
+            populateStateSelector();
+
             const stateSelector = document.getElementById('state-selector');
             const searchInput = document.getElementById('search-input');
 
             // Listen for state changes to load new data
             stateSelector.addEventListener('change', handleStateChange);
-            
+
             // Listen for input on the search box to filter the list in real-time
             searchInput.addEventListener('input', (e) => {
                 // Only filter if a dataset is currently loaded
