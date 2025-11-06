@@ -289,8 +289,8 @@
         const emailLink = record.email
             ? '<a href="mailto:' + record.email + '" class="text-primary hover:text-green-700 underline">' + record.email + '</a>'
             : 'N/A';
-        const websiteLink = record.website
-            ? '<a href="' + record.website + '" target="_blank" rel="noopener" class="text-primary hover:text-green-700 underline">' + record.website + '</a>'
+        const websiteLink = record.url
+            ? '<a href="' + record.url + '" target="_blank" rel="noopener" class="text-primary hover:text-green-700 underline">' + record.url + '</a>'
             : 'N/A';
         const phoneLink = record.phone
             ? '<a href="tel:' + (record.phone || '').replace(/[^0-9]/g, '') + '" class="text-primary hover:text-green-700 underline">' + record.phone + '</a>'
