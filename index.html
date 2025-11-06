@@ -434,6 +434,14 @@
             
             // Store the full dataset and state code globally
             rawDataset = dataset || [];
+
+            // Ensure all records have an ID field (auto-generate if missing)
+            rawDataset.forEach((record, index) => {
+                if (!record.id && record.id !== 0) {
+                    record.id = index + 1;
+                }
+            });
+
             currentStateCode = selectedState;
 
             // Immediately filter and render (with an empty search term)

@@ -415,6 +415,14 @@
         }
 
         rawDataset = Array.isArray(result.data) ? result.data : [];
+
+        // Ensure all records have an ID field (auto-generate if missing)
+        rawDataset.forEach(function(record, index) {
+            if (!record.id && record.id !== 0) {
+                record.id = index + 1;
+            }
+        });
+
         currentStateCode = selectedState;
         filterAndRenderList('');
 
