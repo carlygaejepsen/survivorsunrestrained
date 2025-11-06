@@ -14,6 +14,25 @@
     let currentDataset = [];
     let currentStateCode = null;
 
+    // State names mapping
+    const stateNames = {
+        'ak': 'Alaska', 'al': 'Alabama', 'ar': 'Arkansas', 'az': 'Arizona',
+        'ca': 'California', 'co': 'Colorado', 'ct': 'Connecticut',
+        'dc': 'District of Columbia', 'de': 'Delaware', 'fl': 'Florida',
+        'ga': 'Georgia', 'hi': 'Hawaii', 'ia': 'Iowa', 'id': 'Idaho',
+        'il': 'Illinois', 'in': 'Indiana', 'ks': 'Kansas', 'ky': 'Kentucky',
+        'la': 'Louisiana', 'ma': 'Massachusetts', 'md': 'Maryland',
+        'me': 'Maine', 'mi': 'Michigan', 'mn': 'Minnesota', 'mo': 'Missouri',
+        'ms': 'Mississippi', 'mt': 'Montana', 'nc': 'North Carolina',
+        'nd': 'North Dakota', 'ne': 'Nebraska', 'nh': 'New Hampshire',
+        'nj': 'New Jersey', 'nm': 'New Mexico', 'nv': 'Nevada',
+        'ny': 'New York', 'oh': 'Ohio', 'ok': 'Oklahoma', 'or': 'Oregon',
+        'pa': 'Pennsylvania', 'ri': 'Rhode Island', 'sc': 'South Carolina',
+        'sd': 'South Dakota', 'tn': 'Tennessee', 'tx': 'Texas', 'ut': 'Utah',
+        'va': 'Virginia', 'vt': 'Vermont', 'wa': 'Washington',
+        'wi': 'Wisconsin', 'wv': 'West Virginia', 'wy': 'Wyoming'
+    };
+
     function getElement(id) {
         return document.getElementById(id);
     }
@@ -396,11 +415,15 @@
         rawDataset = [];
 
         const result = await fetchDatasetByState(selectedState);
+
+        // Display user-friendly state name
+        const stateName = stateNames[selectedState.toLowerCase()] || selectedState.toUpperCase();
+
         if (pathDisplay) {
             if (result.error) {
-                pathDisplay.textContent = 'Fetching path: ' + (result.url || 'n/a');
-            } else if (result.url) {
-                pathDisplay.textContent = 'Loaded: ' + result.url;
+                pathDisplay.textContent = 'Failed to load ' + stateName + ' Pantries';
+            } else {
+                pathDisplay.textContent = 'Loaded ' + stateName + ' Pantries';
             }
         }
 

@@ -186,6 +186,25 @@
         // All available states with datasets
         const availableStates = ['ak', 'al', 'ar', 'az', 'ca', 'co', 'ct', 'dc', 'de', 'fl', 'ga', 'hi', 'ia', 'id', 'il', 'in', 'ks', 'ky', 'la', 'ma', 'md', 'me', 'mi', 'mn', 'mo', 'ms', 'mt', 'nc', 'nd', 'ne', 'nh', 'nj', 'nm', 'nv', 'ny', 'oh', 'ok', 'or', 'pa', 'ri', 'sc', 'sd', 'tn', 'tx', 'ut', 'va', 'vt', 'wa', 'wi', 'wv', 'wy'];
 
+        // State names mapping
+        const stateNames = {
+            'ak': 'Alaska', 'al': 'Alabama', 'ar': 'Arkansas', 'az': 'Arizona',
+            'ca': 'California', 'co': 'Colorado', 'ct': 'Connecticut',
+            'dc': 'District of Columbia', 'de': 'Delaware', 'fl': 'Florida',
+            'ga': 'Georgia', 'hi': 'Hawaii', 'ia': 'Iowa', 'id': 'Idaho',
+            'il': 'Illinois', 'in': 'Indiana', 'ks': 'Kansas', 'ky': 'Kentucky',
+            'la': 'Louisiana', 'ma': 'Massachusetts', 'md': 'Maryland',
+            'me': 'Maine', 'mi': 'Michigan', 'mn': 'Minnesota', 'mo': 'Missouri',
+            'ms': 'Mississippi', 'mt': 'Montana', 'nc': 'North Carolina',
+            'nd': 'North Dakota', 'ne': 'Nebraska', 'nh': 'New Hampshire',
+            'nj': 'New Jersey', 'nm': 'New Mexico', 'nv': 'Nevada',
+            'ny': 'New York', 'oh': 'Ohio', 'ok': 'Oklahoma', 'or': 'Oregon',
+            'pa': 'Pennsylvania', 'ri': 'Rhode Island', 'sc': 'South Carolina',
+            'sd': 'South Dakota', 'tn': 'Tennessee', 'tx': 'Texas', 'ut': 'Utah',
+            'va': 'Virginia', 'vt': 'Vermont', 'wa': 'Washington',
+            'wi': 'Wisconsin', 'wv': 'West Virginia', 'wy': 'Wyoming'
+        };
+
         /**
          * Populates the state selector dropdown with all available states
          */
@@ -423,14 +442,17 @@
             rawDataset = [];
 
             const { data: dataset, url, error } = await fetchDatasetByState(selectedState);
-            
-            // Display the full fetching path
-            pathDisplay.textContent = `Fetching path: ${url}`;
+
+            // Display user-friendly state name
+            const stateName = stateNames[selectedState.toLowerCase()] || selectedState.toUpperCase();
 
             if (error) {
+                pathDisplay.textContent = `Failed to load ${stateName} Pantries`;
                 container.innerHTML = `<div class="bg-card p-8 rounded-xl shadow-xl text-center border-l-4 border-red-500"><h2 class="text-2xl font-bold text-red-600 mb-2">Error Loading Data</h2><p class="text-gray-600">${error}</p><p class="text-sm mt-4 text-gray-400">Please check if the file path is correct.</p></div>`;
                 return;
             }
+
+            pathDisplay.textContent = `Loaded ${stateName} Pantries`;
             
             // Store the full dataset and state code globally
             rawDataset = dataset || [];
